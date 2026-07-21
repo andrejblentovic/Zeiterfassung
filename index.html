@@ -89,6 +89,7 @@
 
   html, body {
     height: 100%;
+    height: 100dvh;
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', system-ui, sans-serif;
@@ -101,6 +102,7 @@
   #app {
     display: flex;
     flex-direction: column;
+    height: 100%;
     height: 100dvh;
     max-width: 430px;
     margin: 0 auto;
@@ -438,6 +440,7 @@
 
   #sheet-handle-area {
     padding: 8px 16px 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -460,14 +463,15 @@
     padding: 4px 16px 10px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
     overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.25s;
+    transition: max-height 0.35s cubic-bezier(0.32,0.72,0,1), opacity 0.25s, padding 0.35s cubic-bezier(0.32,0.72,0,1);
     max-height: 200px;
     opacity: 1;
   }
   #sheet-content.collapsed {
     max-height: 0;
     opacity: 0;
-    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    padding-top: 0;
+    padding-bottom: 0;
   }
 
   /* Timer */
@@ -864,52 +868,34 @@
     margin-bottom: 14px;
   }
 
-  /* ── Booking type dropdown ── */
-  .type-select-wrap { position: relative; }
-  .type-selected {
-    height: 46px;
+  /* ── Booking type select ── */
+  /* Natives Select (Buchungsart) — OS übernimmt Anzeige/Scrollen */
+  .native-select-wrap { position: relative; display: flex; align-items: center; }
+  .native-select {
+    width: 100%; height: 46px;
     border-radius: 13px;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 0 14px;
-    display: flex; align-items: center; gap: 10px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    user-select: none;
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    padding: 0 38px 0 38px;
+    outline: none;
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
     box-shadow: var(--shadow);
-  }
-  .type-selected:active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-  .type-chevron { margin-left: auto; flex-shrink: 0; color: var(--text2); transition: transform 0.2s; }
-  .type-chevron.open { transform: rotate(180deg); }
-  .type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .type-dropdown {
-    position: fixed;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    overflow-y: auto;
-    max-height: 320px;
-    z-index: 500;
-    box-shadow: var(--shadow-lg);
-    min-width: 200px;
-  }
-  .type-option {
-    width: 100%; height: 48px;
-    border: none; background: transparent;
-    color: var(--text); font-family: inherit; font-size: 14px; font-weight: 500;
-    padding: 0 16px;
-    display: flex; align-items: center; gap: 12px;
     cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.12s;
-    text-align: left;
   }
-  .type-option:hover, .type-option:active { background: var(--accent-dim); }
-  .type-option + .type-option { border-top: 1px solid var(--border); }
+  .native-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .native-select-wrap .type-dot {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; z-index: 1;
+  }
+  .native-select-chevron {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text2); pointer-events: none;
+  }
+  .native-select option { background: var(--surface); color: var(--text); }
+  .native-select option:disabled { color: var(--text2); }
+  .type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
   /* Mode tabs */
   .mode-tabs {
@@ -1548,24 +1534,21 @@
       <div class="form-selected-date" id="form-date-label"></div>
       <div class="form-note" id="future-note" style="display:none">📅 <b>Zukünftiges Datum</b> — es können nur Nichtleistungszeiten (z. B. Urlaub, Krankenstand) im Voraus eingetragen werden.</div>
 
-      <!-- Booking type dropdown -->
+      <!-- Booking type — natives Select, kein eigenes Scroll-Verhalten nötig -->
       <div class="field" style="margin-bottom:14px">
         <label>Buchungsart</label>
-        <div class="type-select-wrap">
-          <div class="type-selected" id="type-selected" onclick="toggleTypeDropdown()">
-            <span class="type-dot" id="type-dot-sel"></span>
-            <span id="type-label-sel">Normalbuchung</span>
-            <svg class="type-chevron" id="type-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="type-dropdown" id="type-dropdown" style="display:none">
-            <button class="type-option" id="type-opt-normal" onclick="selectType('normal')">    <span class="type-dot" style="background:#22C55E"></span>Normalbuchung</button>
-            <button class="type-option" onclick="selectType('urlaub')">    <span class="type-dot" style="background:#3B82F6"></span>Urlaub</button>
-            <button class="type-option" onclick="selectType('krankenstand')"><span class="type-dot" style="background:#F59E0B"></span>Krankenstand</button>
-            <button class="type-option" onclick="selectType('pflegeurlaub')"><span class="type-dot" style="background:#A78BFA"></span>Pflegeurlaub</button>
-            <button class="type-option" onclick="selectType('feiertag')">  <span class="type-dot" style="background:#F87171"></span>Feiertag</button>
-            <button class="type-option" onclick="selectType('zeitausgleich')"><span class="type-dot" style="background:#34D399"></span>Zeitausgleich</button>
-            <button class="type-option" id="type-opt-ueberstunden" onclick="selectType('ueberstunden')"> <span class="type-dot" style="background:#EC4899"></span>Überstunden</button>
-          </div>
+        <div class="native-select-wrap">
+          <span class="type-dot" id="type-dot-sel" style="background:#22C55E"></span>
+          <select id="type-select" class="native-select" onchange="onTypeChange(this.value)">
+            <option value="normal" id="type-opt-normal">Normalbuchung</option>
+            <option value="urlaub">Urlaub</option>
+            <option value="krankenstand">Krankenstand</option>
+            <option value="pflegeurlaub">Pflegeurlaub</option>
+            <option value="feiertag">Feiertag</option>
+            <option value="zeitausgleich">Zeitausgleich</option>
+            <option value="ueberstunden" id="type-opt-ueberstunden">Überstunden</option>
+          </select>
+          <svg class="native-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
 
@@ -1637,25 +1620,24 @@
       </div>
       <div class="duration-hint" id="range-hint" style="margin-bottom:10px"></div>
 
-      <!-- Booking type dropdown (Zeitraum) -->
+      <!-- Booking type (Zeitraum) — natives Select, kein eigenes Scroll-Verhalten nötig -->
       <div class="field" style="margin-bottom:14px">
         <label>Buchungsart</label>
-        <div class="type-select-wrap">
-          <div class="type-selected" id="range-type-selected" onclick="toggleRangeTypeDropdown()">
-            <span class="type-dot" id="range-type-dot-sel" style="background:#3B82F6"></span>
-            <span id="range-type-label-sel">Urlaub</span>
-            <svg class="type-chevron" id="range-type-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="type-dropdown" id="range-type-dropdown" style="display:none">
-            <button class="type-option" onclick="selectRangeType('urlaub')">    <span class="type-dot" style="background:#3B82F6"></span>Urlaub</button>
-            <button class="type-option" onclick="selectRangeType('krankenstand')"><span class="type-dot" style="background:#F59E0B"></span>Krankenstand</button>
-            <button class="type-option" onclick="selectRangeType('pflegeurlaub')"><span class="type-dot" style="background:#A78BFA"></span>Pflegeurlaub</button>
-            <button class="type-option" onclick="selectRangeType('feiertag')">  <span class="type-dot" style="background:#F87171"></span>Feiertag</button>
-            <button class="type-option" onclick="selectRangeType('zeitausgleich')"><span class="type-dot" style="background:#34D399"></span>Zeitausgleich</button>
-          </div>
-          <input type="hidden" id="range-type" value="urlaub" />
+        <div class="native-select-wrap">
+          <span class="type-dot" id="range-type-dot-sel" style="background:#22C55E"></span>
+          <select id="range-type" class="native-select" onchange="onRangeTypeChange(this.value)">
+            <option value="normal" id="range-type-opt-normal">Normalbuchung</option>
+            <option value="urlaub">Urlaub</option>
+            <option value="krankenstand">Krankenstand</option>
+            <option value="pflegeurlaub">Pflegeurlaub</option>
+            <option value="feiertag">Feiertag</option>
+            <option value="zeitausgleich">Zeitausgleich</option>
+            <option value="ueberstunden" id="range-type-opt-ueberstunden">Überstunden</option>
+          </select>
+          <svg class="native-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
+
 
       <div class="field" style="margin-bottom:14px">
         <label>Notiz</label>
@@ -1976,13 +1958,11 @@ function renderHistory() {
           : `${fmtTime(e.start)} <span>–</span> ${fmtTime(e.end)}`;
         const startVal = e.start ? new Date(e.start).toTimeString().slice(0,5) : '';
         const endVal   = e.end   ? new Date(e.end).toTimeString().slice(0,5)   : '';
-        // Build custom type dropdown options
+        // Build native select options
         const currentType = e.bookingType || 'normal';
         const currentBtype = BOOKING_TYPES[currentType];
-        const typeDropdownOpts = Object.entries(BOOKING_TYPES).map(([k,v]) =>
-          `<button class="type-option edit-type-opt" onclick="selectEditType('${e.id}','${k}')" data-key="${k}">
-            <span class="type-dot" style="background:${v.color}"></span>${v.label}
-          </button>`
+        const typeSelectOpts = Object.entries(BOOKING_TYPES).map(([k,v]) =>
+          `<option value="${k}"${k===currentType?' selected':''}>${v.label}</option>`
         ).join('');
         const displayDuration = netDurationMs(e);
         html += `
@@ -2003,16 +1983,12 @@ function renderHistory() {
             <div class="edit-form-inner">
               <div class="edit-row">
                 <label>Buchungsart</label>
-                <div class="type-select-wrap" style="flex:1">
-                  <div class="type-selected edit-type-selected" id="edit-type-sel-${e.id}" onclick="toggleEditTypeDropdown('${e.id}', event)">
-                    <span class="type-dot" id="edit-type-dot-${e.id}" style="background:${currentBtype.color}"></span>
-                    <span id="edit-type-lbl-${e.id}">${currentBtype.label}</span>
-                    <svg class="type-chevron" id="edit-type-chev-${e.id}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                  </div>
-                  <div class="type-dropdown" id="edit-type-dd-${e.id}" style="display:none">
-                    ${typeDropdownOpts}
-                  </div>
-                  <input type="hidden" id="edit-type-${e.id}" value="${currentType}" />
+                <div class="native-select-wrap" style="flex:1">
+                  <span class="type-dot" id="edit-type-dot-${e.id}" style="background:${currentBtype.color}"></span>
+                  <select class="native-select" id="edit-type-${e.id}" onchange="onEditTypeChange('${e.id}', this.value)">
+                    ${typeSelectOpts}
+                  </select>
+                  <svg class="native-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
               </div>
               <div class="edit-row">
@@ -2075,32 +2051,9 @@ function deleteEntry(id, event) {
   showToast('Eintrag gelöscht');
 }
 
-function toggleEditTypeDropdown(id, event) {
-  if (event) event.stopPropagation();
-  const dd   = document.getElementById(`edit-type-dd-${id}`);
-  const sel  = document.getElementById(`edit-type-sel-${id}`);
-  const chev = document.getElementById(`edit-type-chev-${id}`);
-  const open = dd.style.display === 'none';
-  // Close all other edit dropdowns first
-  document.querySelectorAll('[id^="edit-type-dd-"]').forEach(el => { el.style.display = 'none'; });
-  document.querySelectorAll('[id^="edit-type-chev-"]').forEach(el => el.classList.remove('open'));
-  if (open) {
-    dd.style.display = 'block';
-    chev.classList.add('open');
-    const rect = sel.getBoundingClientRect();
-    dd.style.top   = (rect.bottom + 6) + 'px';
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-  }
-}
-
-function selectEditType(id, key) {
+function onEditTypeChange(id, key) {
   const t = BOOKING_TYPES[key];
-  document.getElementById(`edit-type-${id}`).value      = key;
-  document.getElementById(`edit-type-lbl-${id}`).textContent = t.label;
   document.getElementById(`edit-type-dot-${id}`).style.background = t.color;
-  document.getElementById(`edit-type-dd-${id}`).style.display = 'none';
-  document.getElementById(`edit-type-chev-${id}`).classList.remove('open');
 }
 
 // ── Inline edit ───────────────────────────────────────────────
@@ -2358,14 +2311,13 @@ function selectCalDay(date) {
   const today0 = new Date(); today0.setHours(0, 0, 0, 0);
   const isFutureDay = date > today0;
   document.getElementById('future-note').style.display = isFutureDay ? 'block' : 'none';
-  document.getElementById('type-opt-normal').style.display = isFutureDay ? 'none' : '';
-  document.getElementById('type-opt-ueberstunden').style.display = isFutureDay ? 'none' : '';
+  document.getElementById('type-opt-normal').disabled = isFutureDay;
+  document.getElementById('type-opt-ueberstunden').disabled = isFutureDay;
 
   currentBookingType = isFutureDay ? 'urlaub' : 'normal';
   const initType = BOOKING_TYPES[currentBookingType];
-  document.getElementById('type-label-sel').textContent = initType.label;
+  document.getElementById('type-select').value = currentBookingType;
   document.getElementById('type-dot-sel').style.background = initType.color;
-  document.getElementById('type-dropdown').style.display = 'none';
   // Reset note
   const inpNote = document.getElementById('inp-note');
   if (inpNote) inpNote.value = '';
@@ -2521,28 +2473,10 @@ function fmtSaldo(ms) {
 
 let currentBookingType = 'normal';
 
-function toggleTypeDropdown() {
-  const dd     = document.getElementById('type-dropdown');
-  const sel    = document.getElementById('type-selected');
-  const chevron = document.getElementById('type-chevron');
-  const open   = dd.style.display === 'none';
-  dd.style.display = open ? 'block' : 'none';
-  chevron.classList.toggle('open', open);
-  if (open) {
-    const rect = sel.getBoundingClientRect();
-    dd.style.top   = (rect.bottom + 6) + 'px';
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-  }
-}
-
-function selectType(type) {
+function onTypeChange(type) {
   currentBookingType = type;
   const t = BOOKING_TYPES[type];
-  document.getElementById('type-label-sel').textContent = t.label;
   document.getElementById('type-dot-sel').style.background = t.color;
-  document.getElementById('type-dropdown').style.display = 'none';
-  document.getElementById('type-chevron').classList.remove('open');
 
   // Auto-fill Sollstunden for Fehlzeit types
   if (calSelectedDate && FEHLZEIT_TYPES.has(type)) {
@@ -2561,21 +2495,7 @@ function selectType(type) {
   }
 }
 
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
-  const wrap = document.getElementById('type-dropdown');
-  if (!wrap) return;
-  if (!e.target.closest('.type-select-wrap')) {
-    wrap.style.display = 'none';
-    const ch = document.getElementById('type-chevron');
-    if (ch) ch.classList.remove('open');
-  }
-  // Also close all inline edit dropdowns
-  if (!e.target.closest('[id^="edit-type-dd-"]') && !e.target.closest('.edit-type-selected')) {
-    document.querySelectorAll('[id^="edit-type-dd-"]').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('[id^="edit-type-chev-"]').forEach(el => el.classList.remove('open'));
-  }
-});
+// (Kein Outside-Click-Handler mehr nötig — native Selects schließen sich selbst)
 
 // ── Entry form mode ──────────────────────────────────────────
 let currentMode = 'times';
@@ -2707,15 +2627,29 @@ function getRangeWorkdays(start, end) {
   return days;
 }
 
+function updateRangeTypeAvailability(workdays) {
+  const optNormal = document.getElementById('range-type-opt-normal');
+  const optUeber  = document.getElementById('range-type-opt-ueberstunden');
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  const isFutureRange = (workdays || []).some(d => d > today0);
+  optNormal.disabled = isFutureRange;
+  optUeber.disabled  = isFutureRange;
+  if (isFutureRange && (currentRangeType === 'normal' || currentRangeType === 'ueberstunden')) {
+    document.getElementById('range-type').value = 'urlaub';
+    onRangeTypeChange('urlaub');
+  }
+}
+
 function updateRangeHint() {
   const hint = document.getElementById('range-hint');
   const rsVal = document.getElementById('range-start').value;
   const reVal = document.getElementById('range-end').value;
-  if (!rsVal || !reVal) { hint.textContent = ''; hint.className = 'duration-hint'; return; }
+  if (!rsVal || !reVal) { hint.textContent = ''; hint.className = 'duration-hint'; updateRangeTypeAvailability([]); return; }
   const start = parseDateInputValue(rsVal), end = parseDateInputValue(reVal);
-  if (end < start) { hint.textContent = 'Bis-Datum muss nach Von-Datum liegen'; hint.className = 'duration-hint error'; return; }
+  if (end < start) { hint.textContent = 'Bis-Datum muss nach Von-Datum liegen'; hint.className = 'duration-hint error'; updateRangeTypeAvailability([]); return; }
   const workdays = getRangeWorkdays(start, end);
   const totalDays = Math.round((end - start) / 86400000) + 1;
+  updateRangeTypeAvailability(workdays);
   if (!workdays.length) { hint.textContent = `Keine Arbeitstage in diesem Zeitraum (${totalDays} Kalendertage)`; hint.className = 'duration-hint error'; return; }
   hint.textContent = `${workdays.length} Arbeitstag${workdays.length === 1 ? '' : 'e'} (von ${totalDays} Kalendertagen)`;
   hint.className = 'duration-hint valid';
@@ -2723,39 +2657,13 @@ function updateRangeHint() {
 document.getElementById('range-start').addEventListener('input', updateRangeHint);
 document.getElementById('range-end').addEventListener('input', updateRangeHint);
 
-// Buchungsart-Dropdown für Zeitraum
-let currentRangeType = 'urlaub';
-function toggleRangeTypeDropdown() {
-  const dd = document.getElementById('range-type-dropdown');
-  const sel = document.getElementById('range-type-selected');
-  const chevron = document.getElementById('range-type-chevron');
-  const open = dd.style.display === 'none';
-  dd.style.display = open ? 'block' : 'none';
-  chevron.classList.toggle('open', open);
-  if (open) {
-    const rect = sel.getBoundingClientRect();
-    dd.style.top   = (rect.bottom + 6) + 'px';
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-  }
-}
-function selectRangeType(type) {
+// Buchungsart (Zeitraum) — natives Select
+let currentRangeType = 'normal';
+function onRangeTypeChange(type) {
   currentRangeType = type;
-  document.getElementById('range-type').value = type;
   const t = BOOKING_TYPES[type];
-  document.getElementById('range-type-label-sel').textContent = t.label;
   document.getElementById('range-type-dot-sel').style.background = t.color;
-  document.getElementById('range-type-dropdown').style.display = 'none';
-  document.getElementById('range-type-chevron').classList.remove('open');
 }
-document.addEventListener('click', e => {
-  const wrap = document.getElementById('range-type-dropdown');
-  if (!wrap) return;
-  if (!e.target.closest('#range-type-selected') && !e.target.closest('#range-type-dropdown')) {
-    wrap.style.display = 'none';
-    document.getElementById('range-type-chevron')?.classList.remove('open');
-  }
-});
 
 document.getElementById('btn-range-save').addEventListener('click', () => {
   const rsVal = document.getElementById('range-start').value;
@@ -2771,17 +2679,26 @@ document.getElementById('btn-range-save').addEventListener('click', () => {
   const type = document.getElementById('range-type').value;
   const note = document.getElementById('range-note').value.trim();
 
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  if ((type === 'normal' || type === 'ueberstunden') && workdays.some(d => d > today0)) {
+    showToast('Für zukünftige Tage nur Nichtleistungszeiten wählbar.');
+    return;
+  }
+
   let created = 0, skipped = 0;
   for (const day of workdays) {
     const dayStr = day.toDateString();
     const alreadyExists = state.entries.some(e => new Date(e.end).toDateString() === dayStr);
     if (alreadyExists) { skipped++; continue; }
-    const sollMs   = getSollMs(day);
-    const nettoMin = sollMs !== null ? Math.round(sollMs / 60000) : 8 * 60;
-    const endTs    = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 0).getTime();
-    const startTs  = endTs - nettoMin * 60000;
+    const dow = day.getDay();
+    const startStr = DEFAULT_START[dow] || '06:30';
+    const endStr   = DEFAULT_END[dow]   || '16:00';
+    const [sh, sm] = startStr.split(':').map(Number);
+    const [eh, em] = endStr.split(':').map(Number);
+    const startTs  = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sh, sm).getTime();
+    const endTs    = new Date(day.getFullYear(), day.getMonth(), day.getDate(), eh, em).getTime();
     state.entries.push({
-      id: genId(), start: startTs, end: endTs, duration: nettoMin * 60000,
+      id: genId(), start: startTs, end: endTs, duration: endTs - startTs,
       manual: true, bookingType: type, note
     });
     created++;
