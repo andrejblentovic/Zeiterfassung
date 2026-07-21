@@ -3005,10 +3005,11 @@ function renderReport() {
     const rowCls  = `rep-day-row${isT ? ' today-row' : ''}${isRed ? ' red-row' : ''}`;
 
     let saldoStr = '';
+    const hasSpecialType = dayType[d-1] !== 'normal';
     if (!isFuture && !hName) {
       const sollMs   = getSollMs(date);
       const effectMs = getDayEffectiveMs(date);
-      if (sollMs !== null && ms > 0) {
+      if (sollMs !== null && (ms > 0 || hasSpecialType)) {
         const saldo = effectMs - sollMs;
         const sc = saldo >= 0 ? 'var(--green)' : 'var(--red)';
         const sign = saldo >= 0 ? '+' : '−';
@@ -3018,6 +3019,10 @@ function renderReport() {
       }
     }
 
+    const specialLabel = hasSpecialType
+      ? `<span style="color:${BOOKING_COLOR[dayType[d-1]] || 'var(--text2)'};font-size:11px;font-weight:600">${(BOOKING_TYPES[dayType[d-1]] || {}).label || ''}</span>`
+      : '';
+
     listHtml += `
       <div class="${rowCls}" title="${hName}">
         <span class="rep-day-name">${dow}</span>
@@ -3026,7 +3031,7 @@ function renderReport() {
         <div class="rep-day-bar-wrap">
           <div class="rep-day-bar" style="width:${pct}%;background:${barColor}"></div>
         </div>
-        <span class="rep-day-dur${ms === 0 ? ' empty' : ''}">${ms > 0 ? fmtHours(ms) : (isFuture || date.getDay()===0 ? '—' : getSollMs(date) !== null ? '<span style="color:var(--muted);font-size:10px">fehlt</span>' : '—')}</span>
+        <span class="rep-day-dur${ms === 0 ? ' empty' : ''}">${ms > 0 ? fmtHours(ms) : (specialLabel || (isFuture || date.getDay()===0 ? '—' : getSollMs(date) !== null ? '<span style="color:var(--muted);font-size:10px">fehlt</span>' : '—'))}</span>
         ${saldoStr}`}
       </div>`;
   }
@@ -3601,14 +3606,17 @@ function renderWeekReport() {
     const saldo = sollMs !== null && !isHoliday(date) ? effectMs - sollMs : null;
     const sc = saldo !== null ? (saldo >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text2)';
     const isRed = isRedDay(date);
-    const btype = entries[0]?.bookingType || 'normal';
+    const btype = entries.find(e => e.bookingType && e.bookingType !== 'normal')?.bookingType || entries[0]?.bookingType || 'normal';
     const barColor = BOOKING_COLOR[btype] || '#22C55E';
     const maxPct = istMs > 0 ? 100 : 0;
+    const specialLabel = (btype !== 'normal' && istMs === 0)
+      ? `<span style="color:${BOOKING_COLOR[btype] || 'var(--text2)'};font-size:11px;font-weight:600">${(BOOKING_TYPES[btype] || {}).label || ''}</span>`
+      : '—';
     dayRows += `<div class="rep-day-row${isRed ? ' red-row' : ''}">
       <span class="rep-day-name">${DOW[i]}</span>
       <span class="rep-day-date">${date.getDate()}</span>
       <div class="rep-day-bar-wrap"><div class="rep-day-bar" style="width:${maxPct}%;background:${barColor}"></div></div>
-      <span class="rep-day-dur${istMs === 0 ? ' empty' : ''}">${istMs > 0 ? fmtHours(istMs) : '—'}</span>
+      <span class="rep-day-dur${istMs === 0 ? ' empty' : ''}">${istMs > 0 ? fmtHours(istMs) : specialLabel}</span>
       ${saldo !== null ? `<span class="rep-day-saldo" style="color:${sc}">${saldo >= 0 ? '+' : '−'}${Math.floor(Math.abs(saldo)/3600000)}:${String(Math.floor((Math.abs(saldo)%3600000)/60000)).padStart(2,'0')}</span>` : ''}
     </div>`;
   }
